@@ -186,8 +186,8 @@ namespace GrafikaProjekt2.Mesh
             
             foreach (var p in triangles)
                 p.Fill(g, this); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
-            //foreach (var p in triangles)
-            //    p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
+            foreach (var p in triangles)
+                p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
             foreach (var p  in rotatedPoints)
             g.FillRectangle((Brush)Brushes.Red, p.X-4,p.Y-4,8,8);
             for (int i = 0; i < CONTROLPOINTNUMBER; i++)

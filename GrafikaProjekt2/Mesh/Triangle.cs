@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Numerics;
+using System.Data;
 namespace GrafikaProjekt2.Mesh
 {
     internal class Triangle
@@ -46,21 +47,44 @@ namespace GrafikaProjekt2.Mesh
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
             Brush brush = new SolidBrush( Color.FromArgb((int)I.X,(int)I.Y , (int)I.Z ));
-            g.FillPolygon(brush,pointFs.ToArray());
+           // g.FillPolygon(brush,pointFs.ToArray());
             FillPolygon( g,  mesh);
+        }
+        public void FillPixel(int x, int y, Graphics g, Mesh mesh)
+        {
+            Vector3 color = new Vector3(1F, 0F, 0.1F);
+            Vector3 L = Vector3.Normalize(-vertex3.afterRot + mesh.z);
+            Vector3 I = Vector3.Zero;
+            var A = (float)Vector3.Dot(Vector3.Normalize((Vector3.UnitZ)), 2 * Vector3.Dot(vertex3.rotN, L) * (vertex3.rotN - L));
+            if (A > 0)
+                I += mesh.ks * color * (float)Math.Pow(A, mesh.m);
+            if (Vector3.Dot(vertex3.rotN, L) > 0)
+                I += mesh.kd * color * Vector3.Dot(vertex3.rotN, L);
+            I *= 255;
+            I.X = Math.Min(I.X, 255);
+            I.Y = Math.Min(I.Y, 255);
+            I.Z = Math.Min(I.Z, 255);
+            Brush brush = new SolidBrush(Color.FromArgb((int)I.X, (int)I.Y, (int)I.Z));
+            g.FillRectangle(brush, x, y, 1, 1);
         }
         public void FillLine(List<AET> AETs, int y, Graphics g, Mesh mesh)
         {
             int i = AETs.Count;
-
+            if (AETs.Count == 3)
+            {
+                Brush brush = new SolidBrush(Color.FromArgb(123, 123, 123));
+                for (int x = (int)AETs[0].x; x < (int)AETs[2].x; x++)
+                {
+                    FillPixel(x, y, g, mesh);
+                }
+            }
+            List<AET> AETs1  =  AETs.Where(t => t.ymax < 6).ToList();
             for (int j = 0; j + 1 < i; j += 2)
             {
                 Brush brush = new SolidBrush(Color.FromArgb(123, 123, 123));
                 for (int x = (int)AETs[j].x; x < (int)AETs[j + 1].x; x++)
                 {
-                    g.FillRectangle((Brush)Brushes.Black, x, y, 1, 1);
-                    if (x > 200)
-                        brush = new SolidBrush(Color.FromArgb(123, 123, 123));
+                    FillPixel(x, y, g, mesh);
                 }
 
 
@@ -122,10 +146,10 @@ namespace GrafikaProjekt2.Mesh
                 v2 = vertex1;
             }
             aETs[ (int)v1.afterRot.Y - min] = new List<AET>();
-            if ((int)v2.afterRot.Y - (int)v1.afterRot.Y == 0) Console.WriteLine("lol");
-            //aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
+            if ((int)v2.afterRot.Y - (int)v1.afterRot.Y == 0) //Console.WriteLine("lol");
+            aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, 0));
             else
-                aETs[ (int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
+                aETs[ (int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
             if (vertex1.afterRot.Y < vertex3.afterRot.Y)
             {
                 v1 = vertex1;
@@ -138,11 +162,11 @@ namespace GrafikaProjekt2.Mesh
             }
             if (aETs[(int)v1.afterRot.Y - min] == null)
                 aETs[(int)v1.afterRot.Y - min] = new List<AET>();
-            if (v2.afterRot.Y - v1.afterRot.Y == 0) Console.WriteLine("");
-                //aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
+            if (v2.afterRot.Y - v1.afterRot.Y == 0) //Console.WriteLine("");
+                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, 0));
             else
-
-                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
+                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
+           
             if (vertex2.afterRot.Y < vertex3.afterRot.Y)
             {
                 v1 = vertex2;
@@ -155,11 +179,11 @@ namespace GrafikaProjekt2.Mesh
             }
             if (aETs[(int)v1.afterRot.Y - min] == null)
                 aETs[(int)v1.afterRot.Y - min] = new List<AET>();
-            if (v2.afterRot.Y - v1.afterRot.Y == 0) Console.WriteLine("");
-                //aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
+            if (v2.afterRot.Y - v1.afterRot.Y == 0) //Console.WriteLine("");
+                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, 0));
             else
 
-                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
+                aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y , v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
             return aETs;
         }
         (int min, int max) MinMax()
