@@ -95,6 +95,8 @@ namespace GrafikaProjekt2.Mesh
             int i = AETs.Count;
             if (AETs.Count == 3)
             {
+                if (float.IsNaN(vertex1.N.X))
+                    return;
                 Brush brush = new SolidBrush(Color.FromArgb(123, 123, 123));
                 for (int x = (int)AETs[0].x; x < (int)AETs[2].x; x++)
                 {

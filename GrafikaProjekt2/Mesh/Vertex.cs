@@ -25,7 +25,9 @@ namespace GrafikaProjekt2.Mesh
             rotPu = this.Pu;
             rotPv = this.Pv;
             N = Vector3.Cross(this.Pu, this.Pv);
-            
+            if (float.IsNaN(N.X))
+                N = Vector3.One;
+
             rotN = N;
         }
         int u, v;
