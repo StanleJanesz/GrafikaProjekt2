@@ -220,7 +220,7 @@ namespace GrafikaProjekt2.Mesh
             m = 50;
             ks = 0.5F;
             kd = 0.5F;
-            z = new Vector3(0,-300,-250);
+            z = new Vector3(0,-300,250);
             //z = Vector3.Normalize(z);
         }
         
