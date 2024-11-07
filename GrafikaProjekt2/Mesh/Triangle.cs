@@ -38,32 +38,55 @@ namespace GrafikaProjekt2.Mesh
             if (Vector3.Dot(vertex3.rotN, L) > 0)
                 I += mesh.kd * color * Vector3.Dot(vertex3.rotN, L);
 
-            List<PointF> pointFs = new List<PointF>();
-            pointFs.Add(new PointF(vertex1.afterRot.X, vertex1.afterRot.Y));
-            pointFs.Add(new PointF(vertex2.afterRot.X, vertex2.afterRot.Y));
-            pointFs.Add(new PointF(vertex3.afterRot.X, vertex3.afterRot.Y));
             I *= 255;
             I.X = Math.Min(I.X, 255);
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
-            Brush brush = new SolidBrush( Color.FromArgb((int)I.X,(int)I.Y , (int)I.Z ));
-           // g.FillPolygon(brush,pointFs.ToArray());
             FillPolygon( g,  mesh);
+        }
+        // Compute barycentric coordinates (u, v, w) for
+        // point p with respect to triangle (a, b, c)
+        (float u,float v, float w) Barycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            Vector2 v0 = b - a, v1 = c - a, v2 = p - a;
+            float d00 = Vector2.Dot(v0, v0);
+            float d01 = Vector2.Dot(v0, v1);
+            float d11 = Vector2.Dot(v1, v1);
+            float d20 = Vector2.Dot(v2, v0);
+            float d21 = Vector2.Dot(v2, v1);
+            float denom = d00 * d11 - d01 * d01;
+            float v = (d11 * d20 - d01 * d21) / denom;
+            float w = (d00 * d21 - d01 * d20) / denom;
+            float u = 1.0f - v - w;
+            return (u, v, w);
+        }
+        (Vector3 pos, Vector3 norm) CalculateVertex(int x,int y)
+        {
+            float u, v, w;
+            (u, v, w) = Barycentric(new Vector2(x, y), new Vector2(vertex1.afterRot.X, vertex1.afterRot.Y), new Vector2(vertex2.afterRot.X, vertex2.afterRot.Y), new Vector2(vertex3.afterRot.X, vertex3.afterRot.Y));
+            Vector3 pos = (u * vertex1.afterRot + v * vertex2.afterRot + w * vertex3.afterRot);
+            Vector3 norm = u*vertex1.N + v * vertex2.N + w * vertex3.N;
+            return (pos, norm);
         }
         public void FillPixel(int x, int y, Graphics g, Mesh mesh)
         {
             Vector3 color = new Vector3(1F, 0F, 0.1F);
-            Vector3 L = Vector3.Normalize(-vertex3.afterRot + mesh.z);
+            Vector3 pos, norm;
+            (pos,norm) = CalculateVertex(x,y);
+            Vector3 L = Vector3.Normalize(-pos + mesh.z);
             Vector3 I = Vector3.Zero;
-            var A = (float)Vector3.Dot(Vector3.Normalize((Vector3.UnitZ)), 2 * Vector3.Dot(vertex3.rotN, L) * (vertex3.rotN - L));
+            var A = (float)Vector3.Dot(Vector3.Normalize((Vector3.UnitZ)), 2 * Vector3.Dot(norm, L) * (norm - L));
             if (A > 0)
                 I += mesh.ks * color * (float)Math.Pow(A, mesh.m);
-            if (Vector3.Dot(vertex3.rotN, L) > 0)
-                I += mesh.kd * color * Vector3.Dot(vertex3.rotN, L);
+            if (Vector3.Dot(norm, L) > 0)
+                I += mesh.kd * color * Vector3.Dot(norm, L);
             I *= 255;
             I.X = Math.Min(I.X, 255);
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
+            I.X = Math.Max(I.X, 0);
+            I.Y = Math.Max(I.Y, 0);
+            I.Z = Math.Max(I.Z, 0);
             Brush brush = new SolidBrush(Color.FromArgb((int)I.X, (int)I.Y, (int)I.Z));
             g.FillRectangle(brush, x, y, 1, 1);
         }
