@@ -1,4 +1,6 @@
+using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
 
 namespace GrafikaProjekt2
 {
@@ -77,13 +79,13 @@ namespace GrafikaProjekt2
 
         private void trackBar4_Scroll(object sender, EventArgs e)
         {
-            mesh.SetKd( trackBar4.Value / 99.0F);
+            mesh.SetKd(trackBar4.Value / 99.0F);
             pictureBox1.Invalidate();
         }
 
         private void trackBar5_Scroll(object sender, EventArgs e)
         {
-            mesh.SetKs( trackBar5.Value / 99.0F);
+            mesh.SetKs(trackBar5.Value / 99.0F);
             pictureBox1.Invalidate();
         }
 
@@ -95,7 +97,54 @@ namespace GrafikaProjekt2
 
         private void trackBar7_Scroll(object sender, EventArgs e)
         {
-            mesh.z.Z = trackBar6.Value;
+            int alfa = trackBar7.Value;
+            var m = new Matrix4x4(
+                        (float)Math.Cos((Math.PI / 180) * alfa), -(float)Math.Sin((Math.PI / 180) * alfa), 0, 0,
+                        (float)Math.Sin((Math.PI / 180) * alfa), (float)Math.Cos((Math.PI / 180) * alfa), 0, 0,
+                        0, 0, 1, 0,
+                       0, 0, 0, 1
+                      );
+            Vector4 vector4 = new Vector4(1, 1, 1, 0);
+            vector4 = System.Numerics.Vector4.Transform(mesh.z, m);
+
+            mesh.rotZ = new Vector3(vector4.X, vector4.Y, vector4.Z);
+
+            pictureBox1.Invalidate();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            ColorDialog MyDialog = new ColorDialog();
+            // Keeps the user from selecting a custom color.
+            MyDialog.AllowFullOpen = false;
+            // Allows the user to get help. (The default is false.)
+            MyDialog.ShowHelp = true;
+            // Sets the initial color select to the current text color.
+            MyDialog.Color = Color.FromArgb((int)(255 * mesh.color.X), (int)(255 * mesh.color.Y), (int)(255 * mesh.color.Z));
+
+            // Update the text box color if the user clicks OK 
+            if (MyDialog.ShowDialog() == DialogResult.OK)
+                mesh.color = new System.Numerics.Vector3(MyDialog.Color.R / 255f, MyDialog.Color.G / 255f, MyDialog.Color.B / 255f);
+            pictureBox1.Invalidate();
+        }
+
+        private void trackBar8_Scroll(object sender, EventArgs e)
+        {
+            mesh.z.X = trackBar8.Value;
+            mesh.z.Y = trackBar8.Value;
+            trackBar7_Scroll(sender, e);
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox1.Checked)
+            {
+                mesh.VisMesh = true;
+            }
+            else
+            {
+                mesh.VisMesh = false;
+            }
             pictureBox1.Invalidate();
         }
     }

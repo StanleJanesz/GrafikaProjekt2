@@ -1,30 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using System.Numerics;
-using System.IO;
-using System.Globalization;
-using System.Net.Http;
-using System.Security.AccessControl;
-using System.Drawing.Drawing2D;
-using System.Windows.Forms;
 namespace GrafikaProjekt2.Mesh
 {
     internal class Mesh
     {
+        public Vector3 color;
         List<Triangle> triangles;
         List<Vector3> controlPoints;
         List<Vector3> rotatedPoints;
         int pointsNumber;
         Matrix4x4 rotationMatrix;
-        public int alfa,beta;
+        public int alfa, beta;
         const int CONTROLPOINTNUMBER = 4;
         public int m;
         public float ks;
         public float kd;
+        public bool VisMesh;
         public Vector3 z;
+        public Vector3 rotZ;
+        public Bitmap image1;
         void LoadMesh()
         {
             using (FileStream fs = File.Open("./Mesh.txt", FileMode.OpenOrCreate, FileAccess.Read))
@@ -45,13 +39,13 @@ namespace GrafikaProjekt2.Mesh
                     }
                 }
             }
-            
+
         }
         public void SetPointNumber(int pointNumber)
         {
             this.pointsNumber = pointNumber;
         }
-        public void SetAlfa (int alfa)
+        public void SetAlfa(int alfa)
         {
             this.alfa = alfa;
             rotatedPoints = new List<Vector3>();
@@ -61,11 +55,15 @@ namespace GrafikaProjekt2.Mesh
             {
                 Vector4 vector4 = new Vector4(1, 1, 1, 0);
                 vector4 = System.Numerics.Vector4.Transform(p, rotationMatrix);
-               
-                rotatedPoints.Add(new Vector3(vector4.X,vector4.Y,vector4.Z));
+
+                rotatedPoints.Add(new Vector3(vector4.X, vector4.Y, vector4.Z));
             }
+            //foreach (var t in triangles)
+            //{
+            //    t.Rotate(rotationMatrix);
+            //}
         }
-        public void SetM (int m)
+        public void SetM(int m)
         {
             this.m = m;
         }
@@ -80,7 +78,7 @@ namespace GrafikaProjekt2.Mesh
         public void SetBeta(int beta)
         {
             this.beta = beta;
-            rotatedPoints = new List<Vector3>();
+            rotatedPoints.Clear();
             CalculateRotationMatrix();
             foreach (var p in controlPoints)
             {
@@ -89,6 +87,10 @@ namespace GrafikaProjekt2.Mesh
 
                 rotatedPoints.Add(new Vector3(vector4.X, vector4.Y, vector4.Z));
             }
+            //foreach(var t in triangles)
+            //{
+            //    t.Rotate(rotationMatrix);
+            //}
         }
         public void CalculateRotationMatrix()
         {
@@ -110,69 +112,77 @@ namespace GrafikaProjekt2.Mesh
         {
             triangles.Clear();
             float step = 1 / (float)pointsNumber;
-            Vector3[,] tab = new Vector3[pointsNumber+1, pointsNumber+1];
+            Vector3[,] tab = new Vector3[pointsNumber + 1, pointsNumber + 1];
             Vector3[,] tabPu = new Vector3[pointsNumber + 1, pointsNumber + 1];
             Vector3[,] tabPv = new Vector3[pointsNumber + 1, pointsNumber + 1];
             float bi, bj;
             Vector3 v;
-            for (int i = 0; i < pointsNumber+1; i++)
+            for (int i = 0; i < pointsNumber + 1; i++)
             {
-                for (int j = 0; j < pointsNumber+1; j++)
+                for (int j = 0; j < pointsNumber + 1; j++)
                 {
-                     v = new Vector3(0, 0, 0);
+                    v = new Vector3(0, 0, 0);
                     for (int k = 0; k < CONTROLPOINTNUMBER; k++)
                     {
                         bi = EqCoeff(step * i, k, CONTROLPOINTNUMBER);
                         for (int w = 0; w < CONTROLPOINTNUMBER; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER);
-                            v += rotatedPoints[k * 4 + w]*bj*bi;
+                            v += rotatedPoints[k * 4 + w] * bj * bi;
                         }
                     }
-                    tab[i,j] = v;
+                    tab[i, j] = v;
                     v = new Vector3(0, 0, 0);
-                    for (int k = 0; k < CONTROLPOINTNUMBER-1; k++)
+                    for (int k = 0; k < CONTROLPOINTNUMBER - 1; k++)
                     {
                         bi = EqCoeff(step * i, k, CONTROLPOINTNUMBER);
                         for (int w = 0; w < CONTROLPOINTNUMBER; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER);
-                            v += (rotatedPoints[(k+1) * 4 + w] - rotatedPoints[k * 4 + w]) * bj * bi;
+                            v += (rotatedPoints[(k + 1) * 4 + w] - rotatedPoints[k * 4 + w]) * bj * bi;
                         }
                     }
                     tabPu[i, j] = CONTROLPOINTNUMBER * v;
                     v = new Vector3(0, 0, 0);
-                    for (int k = 0; k < CONTROLPOINTNUMBER ; k++)
+                    for (int k = 0; k < CONTROLPOINTNUMBER; k++)
                     {
                         bi = EqCoeff(step * i, k, CONTROLPOINTNUMBER);
                         for (int w = 0; w < CONTROLPOINTNUMBER - 1; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER - 1);
-                            v += (rotatedPoints[k  * 4 + w+1] - rotatedPoints[k * 4 + w]) * bj * bi;
+                            v += (rotatedPoints[k * 4 + w + 1] - rotatedPoints[k * 4 + w]) * bj * bi;
                         }
                     }
+                    if (float.IsNaN(tabPv[i, j].X))
+                        return;
+                    if (float.IsNaN(tabPu[i, j].X))
+                        return;
                     tabPv[i, j] = CONTROLPOINTNUMBER * v;
                 }
             }
-            
-            for (int i = 0; i < pointsNumber ; i++)
+
+            for (int i = 0; i < pointsNumber; i++)
             {
-                for (int j = 0; j < pointsNumber ; j++)
+                for (int j = 0; j < pointsNumber; j++)
                 {
-                    Vertex v1 = new Vertex(tab[i, j], i, j, tabPu[i, j], tabPv[i,j]);
-                    Vertex v2 = new Vertex(tab[i,j+1],i,j+1, tabPu[i, j + 1], tabPv[i, j + 1]);
-                    Vertex v3 = new Vertex(tab[i+1,j],i+1,j, tabPu[i + 1, j], tabPv[i + 1, j]);
+                    Vertex v1 = new Vertex(tab[i, j], i, j, tabPu[i, j], tabPv[i, j]);
+                    Vertex v2 = new Vertex(tab[i, j + 1], i, j + 1, tabPu[i, j + 1], tabPv[i, j + 1]);
+                    Vertex v3 = new Vertex(tab[i + 1, j], i + 1, j, tabPu[i + 1, j], tabPv[i + 1, j]);
                     Vertex v4 = new Vertex(tab[i + 1, j + 1], i + 1, j + 1, tabPu[i + 1, j + 1], tabPv[i + 1, j + 1]);
-                    triangles.Add(new Triangle(v1,v2,v3));
-                    triangles.Add(new Triangle(v4,v2,v3));
+                    triangles.Add(new Triangle(v1, v2, v3));
+                    triangles.Add(new Triangle(v4, v2, v3));
                 }
+            }
+            foreach (var t in triangles)
+            {
+                t.Rotate(rotationMatrix);
             }
         }
         float EqCoeff(float u, int k, int n)
         {
-            return (float)binomialCoeff(k,n)*(float)Math.Pow(u, k)*(float)Math.Pow((double)(1-u),(double)(CONTROLPOINTNUMBER-1-k));
+            return (float)binomialCoeff(k, n) * (float)Math.Pow(u, k) * (float)Math.Pow((double)(1 - u), (double)(CONTROLPOINTNUMBER - 1 - k));
         }
-        int binomialCoeff( int k,int n)
+        int binomialCoeff(int k, int n)
         {
             if ((k < 0) || (k > n - 1)) return 0;
             k = (k > n - 1 / 2) ? n - 1 - k : k;
@@ -180,31 +190,32 @@ namespace GrafikaProjekt2.Mesh
             for (int i = 1; i <= k; i++) a = (a * (n - 1 - k + i)) / i;
             return (int)(a + 0.5);
         }
-        public void Draw(Graphics g,Bitmap b)
+        public void Draw(Graphics g, Bitmap b)
         {
             CreateTriangles();
-            
+
             foreach (var p in triangles)
                 p.Fill(g, this); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
-            foreach (var p in triangles)
-                p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
-            foreach (var p  in rotatedPoints)
-            g.FillRectangle((Brush)Brushes.Red, p.X-4,p.Y-4,8,8);
+            if (VisMesh)
+                foreach (var p in triangles)
+                    p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
+            foreach (var p in rotatedPoints)
+                g.FillRectangle((Brush)Brushes.Red, p.X - 4, p.Y - 4, 8, 8);
             for (int i = 0; i < CONTROLPOINTNUMBER; i++)
             {
-                for (int j = 0; j < CONTROLPOINTNUMBER-1; j++)
+                for (int j = 0; j < CONTROLPOINTNUMBER - 1; j++)
                 {
-                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4*i+j].X, (int)rotatedPoints[4 * i + j].Y, (int)rotatedPoints[4 * i + j+1].X, (int)rotatedPoints[4 * i + j+1].Y);
-                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4*j+i].X, (int)rotatedPoints[4 * j + i].Y, (int)rotatedPoints[4 * (j + 1) + i].X, (int)rotatedPoints[4 * (j+1) + i].Y);
+                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * i + j].X, (int)rotatedPoints[4 * i + j].Y, (int)rotatedPoints[4 * i + j + 1].X, (int)rotatedPoints[4 * i + j + 1].Y);
+                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * j + i].X, (int)rotatedPoints[4 * j + i].Y, (int)rotatedPoints[4 * (j + 1) + i].X, (int)rotatedPoints[4 * (j + 1) + i].Y);
                 }
             }
             //CreateTriangles();
             //foreach (var p in triangles)
             //    p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
-            
+            g.FillRectangle((Brush)Brushes.Black, rotZ.X - 4, rotZ.Y - 4, 14, 14);
         }
 
-        public Mesh() 
+        public Mesh()
         {
             triangles = new List<Triangle>();
             controlPoints = new List<Vector3>();
@@ -216,13 +227,47 @@ namespace GrafikaProjekt2.Mesh
             }
             alfa = 0;
             beta = 0;
-            pointsNumber = 80;
-            m = 50;
+            pointsNumber = 2;
+            m = 5;
             ks = 0.5F;
             kd = 0.5F;
-            z = new Vector3(560,-230,650);
+            z = new Vector3(100, 100, 250);
             //z = Vector3.Normalize(z);
+            rotationMatrix = Matrix4x4.Identity;
+            color = new Vector3(1F, 0F, 0.1F);
+            rotZ = z;
+            VisMesh = false;
+            image1 = LoadTexture();
         }
-        
+        public Bitmap LoadTexture()
+        {
+            Bitmap image1 = new Bitmap(@"C:\Users\stani\Downloads\everytexture.com-stock-metal-texture-00168.jpeg", true);
+
+            int x, y;
+            return image1;
+        }
+        public Vector4 MapVector(Color pixelColor, Vector3 norm, Vector3 pV, Vector3 pU, Vector3 pos)
+        {
+            Matrix4x4 matrix = Matrix4x4.Identity;
+            matrix[0, 0] = norm.X;
+            matrix[1, 0] = norm.Y;
+            matrix[2, 0] = norm.Z;
+
+            matrix[0, 1] = pV.X;
+            matrix[1, 1] = pV.Y;
+            matrix[2, 1] = pV.Z;
+
+            matrix[0, 2] = pU.X;
+            matrix[1, 2] = pU.Y;
+            matrix[2, 2] = pU.Z;
+            Vector4 vector4 = new Vector4(1, 1, 1, 0);
+            //Color pixelColor = image1.GetPixel((int)pos.X + 500, (int)pos.Y + 500);
+            Vector3 p = new Vector3(pixelColor.R / 255f * 2 - 1, pixelColor.G / 255f * 2 - 1, pixelColor.B / 255f * 2 - 1);
+            vector4 = System.Numerics.Vector4.Transform(p, matrix);
+            return vector4;
+        }
+
+
+
     }
 }
