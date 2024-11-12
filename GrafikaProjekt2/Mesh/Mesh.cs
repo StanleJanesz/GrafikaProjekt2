@@ -19,6 +19,8 @@ namespace GrafikaProjekt2.Mesh
         public Vector3 z;
         public Vector3 rotZ;
         public Bitmap image1;
+        public int counter = 0;
+        public int counter2 = 0;
         void LoadMesh()
         {
             using (FileStream fs = File.Open("./Mesh.txt", FileMode.OpenOrCreate, FileAccess.Read))
@@ -110,6 +112,7 @@ namespace GrafikaProjekt2.Mesh
         }
         void CreateTriangles()
         {
+            counter = 0;
             triangles.Clear();
             float step = 1 / (float)pointsNumber;
             Vector3[,] tab = new Vector3[pointsNumber + 1, pointsNumber + 1];
@@ -128,18 +131,18 @@ namespace GrafikaProjekt2.Mesh
                         for (int w = 0; w < CONTROLPOINTNUMBER; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER);
-                            v += rotatedPoints[k * 4 + w] * bj * bi;
+                            v += controlPoints[k * 4 + w] * bj * bi;
                         }
                     }
                     tab[i, j] = v;
                     v = new Vector3(0, 0, 0);
                     for (int k = 0; k < CONTROLPOINTNUMBER - 1; k++)
                     {
-                        bi = EqCoeff(step * i, k, CONTROLPOINTNUMBER);
+                        bi = EqCoeff(step * i, k, CONTROLPOINTNUMBER-1);
                         for (int w = 0; w < CONTROLPOINTNUMBER; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER);
-                            v += (rotatedPoints[(k + 1) * 4 + w] - rotatedPoints[k * 4 + w]) * bj * bi;
+                            v += (controlPoints[(k + 1) * 4 + w] - controlPoints[k * 4 + w]) * bj * bi;
                         }
                     }
                     tabPu[i, j] = CONTROLPOINTNUMBER * v;
@@ -150,14 +153,16 @@ namespace GrafikaProjekt2.Mesh
                         for (int w = 0; w < CONTROLPOINTNUMBER - 1; w++)
                         {
                             bj = EqCoeff(step * j, w, CONTROLPOINTNUMBER - 1);
-                            v += (rotatedPoints[k * 4 + w + 1] - rotatedPoints[k * 4 + w]) * bj * bi;
+                            v += (controlPoints[k * 4 + w + 1] - controlPoints[k * 4 + w]) * bj * bi;
                         }
                     }
-                    if (float.IsNaN(tabPv[i, j].X))
-                        return;
-                    if (float.IsNaN(tabPu[i, j].X))
-                        return;
                     tabPv[i, j] = CONTROLPOINTNUMBER * v;
+                    if (tabPu[i, j].Equals(Vector3.Zero))
+                    {
+                        return;
+                    }
+
+
                 }
             }
 
@@ -180,7 +185,7 @@ namespace GrafikaProjekt2.Mesh
         }
         float EqCoeff(float u, int k, int n)
         {
-            return (float)binomialCoeff(k, n) * (float)Math.Pow(u, k) * (float)Math.Pow((double)(1 - u), (double)(CONTROLPOINTNUMBER - 1 - k));
+            return (float)binomialCoeff(k, n) * (float)Math.Pow(u, k) * (float)Math.Pow((double)(1 - u), (double)(n - 1 - k));
         }
         int binomialCoeff(int k, int n)
         {
@@ -231,7 +236,7 @@ namespace GrafikaProjekt2.Mesh
             m = 5;
             ks = 0.5F;
             kd = 0.5F;
-            z = new Vector3(100, 100, 250);
+            z = new Vector3(100, 100, 350);
             //z = Vector3.Normalize(z);
             rotationMatrix = Matrix4x4.Identity;
             color = new Vector3(1F, 0F, 0.1F);
@@ -241,7 +246,7 @@ namespace GrafikaProjekt2.Mesh
         }
         public Bitmap LoadTexture()
         {
-            Bitmap image1 = new Bitmap(@"C:\Users\stani\Downloads\everytexture.com-stock-metal-texture-00168.jpeg", true);
+            Bitmap image1 = new Bitmap(@"C:\Users\stani\Downloads\aerial_sand_1k.blend\textures\aerial_sand_diff_1k.jpg", true);
 
             int x, y;
             return image1;

@@ -61,40 +61,55 @@ namespace GrafikaProjekt2.Mesh
             float u = 1.0f - v - w;
             return (u, v, w);
         }
-        (Vector3 pos, Vector3 norm,Vector3 Pv, Vector3 Pu) CalculateVertex(int x, int y)
+        (Vector3 pos, Vector3 norm,Vector3 Pv, Vector3 Pu,Vector3 posB) CalculateVertex(int x, int y)
         {
             float u, v, w;
             (u, v, w) = Barycentric(new Vector2(x, y), new Vector2(vertex1.afterRot.X, vertex1.afterRot.Y), new Vector2(vertex2.afterRot.X, vertex2.afterRot.Y), new Vector2(vertex3.afterRot.X, vertex3.afterRot.Y));
             Vector3 pos = (u * vertex1.afterRot + v * vertex2.afterRot + w * vertex3.afterRot);
+            Vector3 posB = (u * vertex1.point + v * vertex2.point + w * vertex3.point);
             Vector3 norm = u * vertex1.rotN + v * vertex2.rotN + w * vertex3.rotN;
             Vector3 Pv = u * vertex1.Pu + v * vertex2.Pu + w * vertex3.Pu;
             Vector3 Pu= u * vertex1.Pv + v * vertex2.Pv + w * vertex3.Pv;
-            return (pos, norm, Pv, Pu);
+            return (pos, norm, Pv, Pu, posB);
         }
         public void FillPixel(int x, int y, Graphics g, Mesh mesh)
         {
-            Vector3 pos, norm, pv, pu;
-            (pos, norm, pv, pu) = CalculateVertex(x, y);
+            Vector3 pos, norm, pv, pu, posB;
+            (pos, norm, pv, pu, posB) = CalculateVertex(x, y);
             Vector3 L = Vector3.Normalize(-pos + mesh.rotZ);
             Vector3 I = Vector3.Zero;
-            Vector4 n4 = mesh.MapVector(mesh.image1.GetPixel((int)pos.X + 500, (int)pos.Y + 500), norm, pv, pu, pos);
+            Vector4 n4 = mesh.MapVector(mesh.image1.GetPixel((int)posB.X + 500, (int)posB.Y + 500), norm, pv, pu, pos);
             Vector3 n = new Vector3(n4.X, n4.Y, n4.Z);
-            var A = (float)Vector3.Dot((Vector3.UnitZ), 2 * Vector3.Dot(n, L) * (norm - L));
+            n = Vector3.Normalize(n);
+            var A = (float)Vector3.Dot((Vector3.UnitZ), 2 * Vector3.Dot(n, L) * (n - L));
+            if (A > 1) {
+                 I = Vector3.Zero;
+            }
             if (A > 0)
                 I += mesh.ks * mesh.color * (float)Math.Pow(A, mesh.m);
             //if (float.IsNaN(I.Y))
             //    color = new Vector3(1F, 0F, 0.1F);
-            if (Vector3.Dot(norm, L) > 0)
-                I += mesh.kd * mesh.color * Vector3.Dot(norm, L);
+            if (Vector3.Dot(n, L) > 0)
+                I += mesh.kd * mesh.color * Vector3.Dot(n, L);
             //if (I.X < 0)
             //    color = new Vector3(1F, 0F, 0.1F);
             I *= 255;
+            
             I.X = Math.Min(I.X, 255);
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
-            I.X = Math.Max(I.X, 0);
+            if (I.X < 0)
+                I.X = Math.Max(I.X, 0);
             I.Y = Math.Max(I.Y, 0);
             I.Z = Math.Max(I.Z, 0);
+            if(I.Equals(Vector3.Zero))
+            {
+                mesh.counter++;
+            }
+            else
+            {
+                mesh.counter2++;
+            }
             Brush brush = new SolidBrush(Color.FromArgb((int)I.X, (int)I.Y, (int)I.Z));
             g.FillRectangle(brush, x, y, 1, 1);
         }

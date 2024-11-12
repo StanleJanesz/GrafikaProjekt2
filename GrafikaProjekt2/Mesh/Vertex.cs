@@ -9,7 +9,7 @@ namespace GrafikaProjekt2.Mesh
 {
     internal class Vertex
     {
-        Vector3 point;
+        public Vector3 point;
         public Vector3 afterRot;
         public Vector3 Pu, Pv, N;
         public Vector3 rotPu, rotPv, rotN;
@@ -26,8 +26,10 @@ namespace GrafikaProjekt2.Mesh
             rotPv = this.Pv;
             N = Vector3.Cross(this.Pu, this.Pv);
             if (float.IsNaN(N.X))
+            {
                 N = Vector3.Zero;//Vector3.Normalize(Vector3.One);
-
+                N.X = -1;
+            }
             rotN = N;
         }
         public void Rotate(Matrix4x4 rotationMatrix)
