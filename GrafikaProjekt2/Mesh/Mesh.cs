@@ -5,6 +5,7 @@ namespace GrafikaProjekt2.Mesh
     internal class Mesh
     {
         public Vector3 color;
+        public Vector3 lightColor;
         List<Triangle> triangles;
         List<Vector3> controlPoints;
         List<Vector3> rotatedPoints;
@@ -243,6 +244,7 @@ namespace GrafikaProjekt2.Mesh
             rotZ = z;
             VisMesh = false;
             image1 = LoadTexture();
+            lightColor = Vector3.One;
         }
         public Bitmap LoadTexture()
         {
@@ -267,7 +269,7 @@ namespace GrafikaProjekt2.Mesh
             matrix[2, 2] = pU.Z;
             Vector4 vector4 = new Vector4(1, 1, 1, 0);
             //Color pixelColor = image1.GetPixel((int)pos.X + 500, (int)pos.Y + 500);
-            Vector3 p = new Vector3(pixelColor.R / 255f * 2 - 1, pixelColor.G / 255f * 2 - 1, pixelColor.B / 255f * 2 - 1);
+            Vector3 p = new Vector3(pixelColor.R / 255f * 2 - 1, pixelColor.G / 255f * 2 - 1, Math.Max(pixelColor.B / 255f * 2 - 1,0));
             vector4 = System.Numerics.Vector4.Transform(p, matrix);
             return vector4;
         }

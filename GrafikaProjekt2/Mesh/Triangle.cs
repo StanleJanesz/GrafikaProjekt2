@@ -94,7 +94,7 @@ namespace GrafikaProjekt2.Mesh
             //if (I.X < 0)
             //    color = new Vector3(1F, 0F, 0.1F);
             I *= 255;
-            
+            I = Vector3.Multiply(I, mesh.lightColor);
             I.X = Math.Min(I.X, 255);
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
