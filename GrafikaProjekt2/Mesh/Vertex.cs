@@ -25,17 +25,12 @@ namespace GrafikaProjekt2.Mesh
             rotPu = this.Pu;
             rotPv = this.Pv;
             N = Vector3.Cross(this.Pu, this.Pv);
-            if (float.IsNaN(N.X))
-            {
-                N = Vector3.Zero;//Vector3.Normalize(Vector3.One);
-                N.X = -1;
-            }
+
             rotN = N;
         }
         public void Rotate(Matrix4x4 rotationMatrix)
         {
-            Vector4 vector4 = new Vector4(1, 1, 1, 0);
-            vector4 = System.Numerics.Vector4.Transform(point, rotationMatrix);
+            Vector4 vector4 = System.Numerics.Vector4.Transform(point, rotationMatrix);
 
             afterRot = (new Vector3(vector4.X, vector4.Y, vector4.Z));
             vector4 = System.Numerics.Vector4.Transform(N, rotationMatrix);

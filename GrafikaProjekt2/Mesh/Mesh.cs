@@ -9,7 +9,7 @@ namespace GrafikaProjekt2.Mesh
         List<Triangle> triangles;
         List<Vector3> controlPoints;
         List<Vector3> rotatedPoints;
-        int pointsNumber;
+        int pointsNumber { get;  set; }
         Matrix4x4 rotationMatrix;
         public int alfa, beta;
         const int CONTROLPOINTNUMBER = 4;
@@ -17,14 +17,22 @@ namespace GrafikaProjekt2.Mesh
         public float ks;
         public float kd;
         public bool VisMesh;
+        public bool isTexture;
+        public bool isColor;
+        public bool isControl;
         public Vector3 z;
         public Vector3 rotZ;
         public Bitmap image1;
+        public Bitmap image2;
+        public Bitmap image3;
+        public Bitmap image4;
+        public Bitmap image5;
+        public Bitmap ColorImage;
         public int counter = 0;
         public int counter2 = 0;
         void LoadMesh()
         {
-            using (FileStream fs = File.Open("./Mesh.txt", FileMode.OpenOrCreate, FileAccess.Read))
+            using (FileStream fs = File.Open("../../../Mesh/Mesh.txt", FileMode.OpenOrCreate, FileAccess.Read))
             {
                 using (StreamReader reader = new StreamReader(fs))
                 {
@@ -56,15 +64,10 @@ namespace GrafikaProjekt2.Mesh
 
             foreach (var p in controlPoints)
             {
-                Vector4 vector4 = new Vector4(1, 1, 1, 0);
-                vector4 = System.Numerics.Vector4.Transform(p, rotationMatrix);
+                Vector4 vector4 = System.Numerics.Vector4.Transform(p, rotationMatrix);
 
                 rotatedPoints.Add(new Vector3(vector4.X, vector4.Y, vector4.Z));
             }
-            //foreach (var t in triangles)
-            //{
-            //    t.Rotate(rotationMatrix);
-            //}
         }
         public void SetM(int m)
         {
@@ -85,15 +88,10 @@ namespace GrafikaProjekt2.Mesh
             CalculateRotationMatrix();
             foreach (var p in controlPoints)
             {
-                Vector4 vector4 = new Vector4(1, 1, 1, 0);
-                vector4 = System.Numerics.Vector4.Transform(p, rotationMatrix);
+                Vector4 vector4 = System.Numerics.Vector4.Transform(p, rotationMatrix);
 
                 rotatedPoints.Add(new Vector3(vector4.X, vector4.Y, vector4.Z));
             }
-            //foreach(var t in triangles)
-            //{
-            //    t.Rotate(rotationMatrix);
-            //}
         }
         public void CalculateRotationMatrix()
         {
@@ -199,25 +197,26 @@ namespace GrafikaProjekt2.Mesh
         public void Draw(Graphics g, Bitmap b)
         {
             CreateTriangles();
-
+            if(isColor)
             foreach (var p in triangles)
-                p.Fill(g, this); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
+                p.Fill(g, this); 
             if (VisMesh)
                 foreach (var p in triangles)
-                    p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
-            foreach (var p in rotatedPoints)
-                g.FillRectangle((Brush)Brushes.Red, p.X - 4, p.Y - 4, 8, 8);
-            for (int i = 0; i < CONTROLPOINTNUMBER; i++)
+                    p.Draw(g); 
+            if (isControl)
             {
-                for (int j = 0; j < CONTROLPOINTNUMBER - 1; j++)
+                foreach (var p in rotatedPoints)
+                    g.FillRectangle((Brush)Brushes.Red, p.X - 4, p.Y - 4, 8, 8);
+                for (int i = 0; i < CONTROLPOINTNUMBER; i++)
                 {
-                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * i + j].X, (int)rotatedPoints[4 * i + j].Y, (int)rotatedPoints[4 * i + j + 1].X, (int)rotatedPoints[4 * i + j + 1].Y);
-                    g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * j + i].X, (int)rotatedPoints[4 * j + i].Y, (int)rotatedPoints[4 * (j + 1) + i].X, (int)rotatedPoints[4 * (j + 1) + i].Y);
+                    for (int j = 0; j < CONTROLPOINTNUMBER - 1; j++)
+                    {
+                        g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * i + j].X, (int)rotatedPoints[4 * i + j].Y, (int)rotatedPoints[4 * i + j + 1].X, (int)rotatedPoints[4 * i + j + 1].Y);
+                        g.DrawLine(new Pen(Color.Black, 2), (int)rotatedPoints[4 * j + i].X, (int)rotatedPoints[4 * j + i].Y, (int)rotatedPoints[4 * (j + 1) + i].X, (int)rotatedPoints[4 * (j + 1) + i].Y);
+                    }
                 }
             }
-            //CreateTriangles();
-            //foreach (var p in triangles)
-            //    p.Draw(g); // g.FillRectangle((Brush)Brushes.Black, p.X, p.Y, 2, 2);
+            
             g.FillRectangle((Brush)Brushes.Black, rotZ.X - 4, rotZ.Y - 4, 14, 14);
         }
 
@@ -233,25 +232,44 @@ namespace GrafikaProjekt2.Mesh
             }
             alfa = 0;
             beta = 0;
-            pointsNumber = 2;
+            pointsNumber = 60;
             m = 5;
-            ks = 0.5F;
-            kd = 0.5F;
+            ks = 0.2F;
+            kd = 0.8F;
             z = new Vector3(100, 100, 350);
-            //z = Vector3.Normalize(z);
             rotationMatrix = Matrix4x4.Identity;
-            color = new Vector3(1F, 0F, 0.1F);
+            color = new Vector3(0F, 1, 1F);
             rotZ = z;
             VisMesh = false;
-            image1 = LoadTexture();
+            isTexture = false;
+            isColor = true;
+            isControl = false;
+            LoadTexture();
             lightColor = Vector3.One;
+            ColorImage = null;
         }
-        public Bitmap LoadTexture()
+        public void LoadTexture()
         {
-            Bitmap image1 = new Bitmap(@"C:\Users\stani\Downloads\aerial_sand_1k.blend\textures\aerial_sand_diff_1k.jpg", true);
+            image2 = ScaleImage( new Bitmap(@"../../../textures/0a88dafa79826a35c4c701eb6703d81c.jpg", true),400,400);
+            image3 = ScaleImage(new Bitmap(@"../../../textures/tex2.png", true), 400, 400);
+            image4 = ScaleImage(new Bitmap(@"../../../textures/R.png", true), 400, 400);
+            image1 = image4;
+        }
+        public Bitmap ScaleImage(Bitmap bmp, int maxWidth, int maxHeight)
+        {
+            var ratioX = (double)maxWidth / bmp.Width;
+            var ratioY = (double)maxHeight / bmp.Height; 
+            var ratio = Math.Min(ratioX, ratioY);
 
-            int x, y;
-            return image1;
+            var newWidth = (int)(bmp.Width * ratio);
+            var newHeight = (int)(bmp.Height * ratio);
+
+            var newImage = new Bitmap(newWidth, newHeight);
+
+            using (var graphics = Graphics.FromImage(newImage))
+                graphics.DrawImage(bmp, 0, 0, newWidth, newHeight);
+
+            return newImage;
         }
         public Vector4 MapVector(Color pixelColor, Vector3 norm, Vector3 pV, Vector3 pU, Vector3 pos)
         {
@@ -267,10 +285,8 @@ namespace GrafikaProjekt2.Mesh
             matrix[0, 2] = pU.X;
             matrix[1, 2] = pU.Y;
             matrix[2, 2] = pU.Z;
-            Vector4 vector4 = new Vector4(1, 1, 1, 0);
-            //Color pixelColor = image1.GetPixel((int)pos.X + 500, (int)pos.Y + 500);
             Vector3 p = new Vector3(pixelColor.R / 255f * 2 - 1, pixelColor.G / 255f * 2 - 1, Math.Max(pixelColor.B / 255f * 2 - 1,0));
-            vector4 = System.Numerics.Vector4.Transform(p, matrix);
+            Vector4 vector4 = System.Numerics.Vector4.Transform(p, matrix);
             return vector4;
         }
 

@@ -18,25 +18,9 @@ namespace GrafikaProjekt2.Mesh
             g.DrawLine(new Pen(Color.Black, 1), vertex1.afterRot.X, vertex1.afterRot.Y, vertex2.afterRot.X, vertex2.afterRot.Y);
             g.DrawLine(new Pen(Color.Black, 1), vertex1.afterRot.X, vertex1.afterRot.Y, vertex3.afterRot.X, vertex3.afterRot.Y);
             g.DrawLine(new Pen(Color.Black, 1), vertex3.afterRot.X, vertex3.afterRot.Y, vertex2.afterRot.X, vertex2.afterRot.Y);
-            //g.FillRectangle((Brush)Brushes.Black, vertex1.afterRot.X, vertex1.afterRot.Y, 2, 2);
-            //g.FillRectangle((Brush)Brushes.Black, vertex2.afterRot.X, vertex2.afterRot.Y, 2, 2);
-            //g.FillRectangle((Brush)Brushes.Black, vertex3.afterRot.X, vertex3.afterRot.Y, 2, 2);
         }
         public void Fill(Graphics g, Mesh mesh)
         {
-            Vector3 color = new Vector3(1F, 0F, 0.1F);
-            Vector3 L = Vector3.Normalize(-vertex3.afterRot + mesh.rotZ);
-            Vector3 I = Vector3.Zero;
-            var A = (float)Vector3.Dot(Vector3.Normalize((Vector3.UnitZ)), 2 * Vector3.Dot(vertex3.rotN, L) * (vertex3.rotN - L));
-            if (A > 0)
-                I += mesh.ks * color * (float)Math.Pow(A, mesh.m);
-            if (Vector3.Dot(vertex3.rotN, L) > 0)
-                I += mesh.kd * color * Vector3.Dot(vertex3.rotN, L);
-
-            I *= 255;
-            I.X = Math.Min(I.X, 255);
-            I.Y = Math.Min(I.Y, 255);
-            I.Z = Math.Min(I.Z, 255);
             FillPolygon(g, mesh);
         }
         public void Rotate(Matrix4x4 rotationMatrix)
@@ -45,8 +29,6 @@ namespace GrafikaProjekt2.Mesh
             vertex2.Rotate(rotationMatrix);
             vertex3.Rotate(rotationMatrix);
         }
-        // Compute barycentric coordinates (u, v, w) for
-        // point p with respect to triangle (a, b, c)
         (float u, float v, float w) Barycentric(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
         {
             Vector2 v0 = b - a, v1 = c - a, v2 = p - a;
@@ -78,29 +60,42 @@ namespace GrafikaProjekt2.Mesh
             (pos, norm, pv, pu, posB) = CalculateVertex(x, y);
             Vector3 L = Vector3.Normalize(-pos + mesh.rotZ);
             Vector3 I = Vector3.Zero;
-            Vector4 n4 = mesh.MapVector(mesh.image1.GetPixel((int)posB.X + 500, (int)posB.Y + 500), norm, pv, pu, pos);
-            Vector3 n = new Vector3(n4.X, n4.Y, n4.Z);
-            n = Vector3.Normalize(n);
+            Vector3 n;
+            if (mesh.isTexture)
+            {
+                if ( norm == Vector3.Zero ) 
+                {
+                    I = Vector3.Zero;
+                }
+                Vector4 n4 = mesh.MapVector(mesh.image1.GetPixel(((int)posB.X + 200) % (mesh.image1.Width-1) + 1, (-(int)posB.Y + 200) % (mesh.image1.Height-1) + 1), norm, pv, pu, pos);
+                n = new Vector3(n4.X, n4.Y, n4.Z);
+                n = Vector3.Normalize(n);
+            }
+            else
+            {
+                n = norm;
+            }
+                
+            
             var A = (float)Vector3.Dot((Vector3.UnitZ), 2 * Vector3.Dot(n, L) * (n - L));
-            if (A > 1) {
-                 I = Vector3.Zero;
+            Vector3 color = mesh.color;
+            if( mesh.ColorImage != null)
+            {
+            
+                Color pixelColor = mesh.ColorImage.GetPixel(((int)posB.X +200 ) % (mesh.ColorImage.Width - 1) + 1, (-(int)posB.Y +200) % (mesh.ColorImage.Height - 1) + 1);
+                color = new Vector3(pixelColor.R / 255f , pixelColor.G / 255f , pixelColor.B / 255f);
             }
             if (A > 0)
-                I += mesh.ks * mesh.color * (float)Math.Pow(A, mesh.m);
-            //if (float.IsNaN(I.Y))
-            //    color = new Vector3(1F, 0F, 0.1F);
+                I += mesh.ks * color * (float)Math.Pow(A, mesh.m);
             if (Vector3.Dot(n, L) > 0)
-                I += mesh.kd * mesh.color * Vector3.Dot(n, L);
-            //if (I.X < 0)
-            //    color = new Vector3(1F, 0F, 0.1F);
+                I += mesh.kd * color * Vector3.Dot(n, L);
             I *= 255;
             I = Vector3.Multiply(I, mesh.lightColor);
             I.X = Math.Min(I.X, 255);
             I.Y = Math.Min(I.Y, 255);
             I.Z = Math.Min(I.Z, 255);
-            if (I.X < 0)
-                I.X = Math.Max(I.X, 0);
-            I.Y = Math.Max(I.Y, 0);
+            I.X = Math.Max(I.X, 0);
+            I.Y = Math.Max(I.Y, 0); 
             I.Z = Math.Max(I.Z, 0);
             if(I.Equals(Vector3.Zero))
             {
@@ -118,9 +113,6 @@ namespace GrafikaProjekt2.Mesh
             int i = AETs.Count;
             if (AETs.Count == 3)
             {
-                if (float.IsNaN(vertex1.N.Z))
-                    return;
-                Brush brush = new SolidBrush(Color.FromArgb(123, 123, 123));
                 for (int x = (int)AETs[0].x; x < (int)AETs[2].x; x++)
                 {
                     FillPixel(x, y, g, mesh);
@@ -129,7 +121,6 @@ namespace GrafikaProjekt2.Mesh
             List<AET> AETs1 = AETs.Where(t => t.ymax < 6).ToList();
             for (int j = 0; j + 1 < i; j += 2)
             {
-                Brush brush = new SolidBrush(Color.FromArgb(123, 123, 123));
                 for (int x = (int)AETs[j].x; x < (int)AETs[j + 1].x; x++)
                 {
                     FillPixel(x, y, g, mesh);
@@ -139,7 +130,7 @@ namespace GrafikaProjekt2.Mesh
 
         public void FillPolygon(Graphics g, Mesh mesh)
         {
-            //mesh.MapVector(mesh.LoadTexture(), vertex1.rotN, vertex1.Pv, vertex1.rotPu, vertex1.afterRot);
+          
             int min, max;
             (min, max) = MinMax();
             List<AET>[] ET = CreateET(min, max);
@@ -156,7 +147,7 @@ namespace GrafikaProjekt2.Mesh
                 }
                 AETs = AETs.OrderBy(o => o.x).ToList();
                 AETs.Sort((x, y) => x.x.CompareTo(y.x));
-                FillLine(AETs, y, g, mesh);  // fill line 
+                FillLine(AETs, y, g, mesh);  
                 foreach (AET aET in AETs) { if (aET.ymax <= y) del.Add(aET); }
                 if (del.Count > 0)
                 {
@@ -190,7 +181,7 @@ namespace GrafikaProjekt2.Mesh
                 v2 = vertex1;
             }
             aETs[(int)v1.afterRot.Y - min] = new List<AET>();
-            if ((int)v2.afterRot.Y - (int)v1.afterRot.Y == 0) //Console.WriteLine("lol");
+            if ((int)v2.afterRot.Y - (int)v1.afterRot.Y == 0) 
                 aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
             else
                 aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
@@ -206,7 +197,7 @@ namespace GrafikaProjekt2.Mesh
             }
             if (aETs[(int)v1.afterRot.Y - min] == null)
                 aETs[(int)v1.afterRot.Y - min] = new List<AET>();
-            if (v2.afterRot.Y - v1.afterRot.Y == 0) //Console.WriteLine("");
+            if (v2.afterRot.Y - v1.afterRot.Y == 0) 
                 aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
             else
                 aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, (float)((int)v2.afterRot.X - (int)v1.afterRot.X) / (float)((int)v2.afterRot.Y - (int)v1.afterRot.Y)));
@@ -223,7 +214,7 @@ namespace GrafikaProjekt2.Mesh
             }
             if (aETs[(int)v1.afterRot.Y - min] == null)
                 aETs[(int)v1.afterRot.Y - min] = new List<AET>();
-            if (v2.afterRot.Y - v1.afterRot.Y == 0) //Console.WriteLine("");
+            if (v2.afterRot.Y - v1.afterRot.Y == 0) 
                 aETs[(int)v1.afterRot.Y - min].Add(new AET((int)v2.afterRot.Y, v1.afterRot.X, 0));
             else
 
